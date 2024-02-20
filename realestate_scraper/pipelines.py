@@ -7,7 +7,7 @@ import pymongo
 
 class MongoPipeline(object):
 
-    collection_name = 'portalinmob'
+    collection_name = 'snapshots'
 
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
