@@ -22,8 +22,10 @@ class PortailInmobiliarioSpider(scrapy.Spider):
             moneda = item.css('.andes-money-amount__currency-symbol::text').get().strip()
             # Precio
             precio = item.css('.andes-money-amount__fraction::text').get().strip()
-            # Tracking_id
-            url = item.css('a.ui-search-result__image.ui-search-link::attr(href)').get().strip()
+            # Url
+            url_completa = item.css('a.ui-search-result__image.ui-search-link::attr(href)').get().strip()
+            partes_url = url_completa.split('#')
+            url = partes_url[0]
             
             yield {'fecha_hora': self.dt, 'titulo': titulo, 'moneda': moneda, 'precio': precio, 'url': url}
             

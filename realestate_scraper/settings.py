@@ -68,7 +68,7 @@ ITEM_PIPELINES = {
 
 # Database
 MONGO_URI = 'mongodb://127.0.0.1:27017/'
-MONGO_DATABASE = 'portalinmob'
+MONGO_DATABASE = 'portalinmobiliario'
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

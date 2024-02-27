@@ -9,8 +9,13 @@
     mongosh
 
 ### Init Data Base
-    use realestate
+    use portalinmob
+
+### Documentos
+- snapshot
+- incremental
 
 ### Examples for queries in portalinmob table
-    db.portalinmob.countDocuments()
-    db.portalinmob.find()
+    db.snapshot.countDocuments()
+    db.snapshot.find()
+    db.snapshot.deleteMany({'fecha_hora': '20-02-2024 02:10:09'})
