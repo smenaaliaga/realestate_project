@@ -1,7 +1,11 @@
 # Realestate Scraper
 
+## Activate Virtual Environment
+
+    source ../environments/realestate_scraper/bin/activate
+
 ## Execute scraper
-    scrapy crawl PortalInmobiliario
+    scrapy crawl PortalInmobiliarioURLS
 
 ## Use Data Base MongoDB
 
@@ -9,13 +13,15 @@
     mongosh
 
 ### Init Data Base
-    use portalinmob
+    use portalinmobiliario
 
 ### Documentos
 - snapshot
 - incremental
+- details
 
 ### Examples for queries in portalinmob table
     db.snapshot.countDocuments()
     db.snapshot.find()
-    db.snapshot.deleteMany({'fecha_hora': '20-02-2024 02:10:09'})
+    db.incremental.distinct("fecha_hora")
+    db.incremental.deleteMany({'fecha_hora': '12-03-2024 04:47:12'})

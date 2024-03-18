@@ -7,7 +7,7 @@ import pymongo
 
 class MongoPipeline(object):
 
-    collection_name = 'snapshot'
+    collection_name = 'propiedades'
 
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
@@ -23,9 +23,6 @@ class MongoPipeline(object):
     def open_spider(self, spider):
         self.client = pymongo.MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
-        
-        # Truncar la colección antes de insertar nuevos datos
-        self.db[self.collection_name].delete_many({})
 
     def close_spider(self, spider):
         self.client.close()
