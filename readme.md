@@ -5,7 +5,7 @@
     source ../environments/realestate_scraper/bin/activate
 
 ## Execute scraper
-    scrapy crawl PortalInmobiliarioURLS
+    scrapy crawl PortalInmobiliario
 
 ## Use Data Base MongoDB
 

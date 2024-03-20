@@ -3,11 +3,25 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+import random
+import logging
 from scrapy import signals
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
 
+class RandomUserAgentMiddleware(object):
+    def __init__(self, user_agents):
+        self.user_agents = user_agents
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings.getlist('USER_AGENTS'))
+
+    def process_request(self, request, spider):
+        user_agent = random.choice(self.user_agents)
+        request.headers.setdefault('User-Agent', user_agent)
+        logging.info(f"User-Agent set to: {user_agent}")
 
 class RealestateScraperSpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,

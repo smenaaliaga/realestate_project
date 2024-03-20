@@ -22,7 +22,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
         self.mongo_db = get_project_settings().get('MONGO_DATABASE')
         self.mongo_collection = get_project_settings().get('MONGO_COLLECTION')
         # fecha_horaen 
-        self.dt = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        self.dt = datetime.now()
         # urls to parse
         self.collected_urls = []
 
@@ -97,33 +97,36 @@ class PortailInmobiliarioSpider(scrapy.Spider):
 
     def parse_url(self, response):
         # Obtiene todas las caracteristicas de las propiedades
-        titulo = response.css('h1.ui-pdp-title::text').get()
-        simbolo_moneda = response.css('span.andes-money-amount__currency-symbol::text').get()
-        precio = response.css('span.andes-money-amount__fraction::text').get()
-        ubicacion = response.css('.ui-vip-location__subtitle .ui-pdp-media__title::text').get()
-        map_image_url = response.css('div#ui-vip-location__map img::attr(src)').get()
-        coordenadas = re.search(r'center=(-?\d+\.\d+)%2C(-?\d+\.\d+)', map_image_url)
-        if coordenadas:
-            latitud = coordenadas.group(1)
-            longitud = coordenadas.group(2)
+        titulo = response.css('h1.ui-pdp-title::text').get(default=None)
+        simbolo_moneda = response.css('span.andes-money-amount__currency-symbol::text').get(default=None)
+        precio = response.css('span.andes-money-amount__fraction::text').get(default=None)
+        ubicacion = response.css('.ui-vip-location__subtitle .ui-pdp-media__title::text').get(default=None)
+        map_image_url = response.css('div#ui-vip-location__map img::attr(src)').get(default=None)
+        coordenadas = re.search(r'center=(-?\d+\.\d+)%2C(-?\d+\.\d+)', map_image_url) if map_image_url else None
+        latitud = coordenadas.group(1) if coordenadas else None
+        longitud = coordenadas.group(2) if coordenadas else None
         caracteristicas = response.css('.ui-vpp-striped-specs__table')
         caracteristicas_dict = {}
         for caracteristica in caracteristicas:
-            titulo_caracteristica = caracteristica.css('h3.ui-vpp-striped-specs__header::text').get().strip()
+            titulo_caracteristica = caracteristica.css('h3.ui-vpp-striped-specs__header::text').get(default="").strip()
             campos_valores = {}
             filas = caracteristica.css('.andes-table__row')
             for fila in filas:
-                campo = fila.css('.andes-table__header .andes-table__header__container::text').get().strip()
-                valor = fila.css('.andes-table__column--value::text').get().strip()
+                campo = fila.css('.andes-table__header .andes-table__header__container::text').get(default="").strip()
+                valor = fila.css('.andes-table__column--value::text').get(default="").strip()
                 campos_valores[campo] = valor
-            caracteristicas_dict[titulo_caracteristica] = campos_valores
-        descripcion_fragmentos  = response.css('p.ui-pdp-description__content ::text').getall()
+            if titulo_caracteristica:  # Asegurarse de que el título de la característica no esté vacío
+                caracteristicas_dict[titulo_caracteristica] = campos_valores
+        descripcion_fragmentos = response.css('p.ui-pdp-description__content ::text').getall()
         descripcion_completa = ' '.join(descripcion_fragmentos).strip()
-        script_content = response.xpath('//script[contains(., "window.__PRELOADED_STATE__")]/text()').get()
-        info_zona = self.get_info_zonas(script_content)
+        script_content = response.xpath('//script[contains(., "window.__PRELOADED_STATE__")]/text()').get(default=None)
+        info_zona = self.get_info_zonas(script_content) if script_content else None
         refs = response.css('.ui-pdp-price-comparison__extra-info-element-value::text').getall()
-        ref_precio = {'esta_propiedad': refs[0], 'promedio_zona': refs[1]}
-        corredora = response.css('h3.ui-pdp-color--BLACK.ui-pdp-size--XSMALL.ui-pdp-family--REGULAR::text').get()
+        if refs and len(refs) >= 2:
+            ref_precio = {'esta_propiedad': refs[0], 'promedio_zona': refs[1]}
+        else:
+            ref_precio = None
+        corredora = response.css('h3.ui-pdp-color--BLACK.ui-pdp-size--XSMALL.ui-pdp-family--REGULAR::text').get(default=None)
 
         yield {
             'dt_process': self.dt,
