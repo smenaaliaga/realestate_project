@@ -3,11 +3,11 @@ import subprocess
 if __name__ == '__main__':
     # Variables
     tipo_operaciones = ['venta'] #, 'arriendo']
-    tipo_propiedades = ['departamento'] #, 'casa', 'parcela']
-    modalidades = ['propiedades-usadas'] #, 'proyectos']
+    tipo_propiedades = ['departamento', 'casa'] #, 'parcela']
+    modalidades = ['propiedades-usadas', 'proyectos']
     ubicaciones = {
         'metropolitana': {
-            'providencia': ['barrio-italia'] #, 'bellavista', 'campus-oriente', 'ines-de-suarez', 'las-lilas', 'los-leones', 'manuel-montt', 'metro-bilbao', 'metro-tobalaba-mall-costanera', 'pedro-de-valdivia', 'pedro-de-valdivia-norte', 'plaza-italia', 'salvador']
+            'providencia': ['barrio-italia', 'bellavista', 'campus-oriente', 'ines-de-suarez', 'las-lilas', 'los-leones', 'manuel-montt', 'metro-bilbao', 'metro-tobalaba-mall-costanera', 'pedro-de-valdivia', 'pedro-de-valdivia-norte', 'plaza-italia', 'salvador']
         }
     }
 

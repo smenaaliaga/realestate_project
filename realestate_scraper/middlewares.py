@@ -11,17 +11,19 @@ from scrapy import signals
 from itemadapter import is_item, ItemAdapter
 
 class RandomUserAgentMiddleware(object):
-    def __init__(self, user_agents):
-        self.user_agents = user_agents
+    def __init__(self, user_agent):
+        self.user_agent = user_agent
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler.settings.getlist('USER_AGENTS'))
+        user_agents = crawler.settings.getlist('USER_AGENTS')
+        # Seleccionar un User-Agent aleatorio para este spider en particular
+        user_agent = random.choice(user_agents)
+        return cls(user_agent)
 
     def process_request(self, request, spider):
-        user_agent = random.choice(self.user_agents)
-        request.headers.setdefault('User-Agent', user_agent)
-        logging.info(f"User-Agent set to: {user_agent}")
+        request.headers.setdefault('User-Agent', self.user_agent)
+        logging.info(f"User-Agent set to: {self.user_agent} for {spider.name}")
 
 class RealestateScraperSpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,

@@ -29,12 +29,11 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0"
 ]
 
-
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-#CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 4
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
@@ -48,7 +47,7 @@ DOWNLOAD_DELAY = 3
 # COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
-#TELNETCONSOLE_ENABLED = False
+TELNETCONSOLE_ENABLED = False
 
 # Override the default request headers:
 #DEFAULT_REQUEST_HEADERS = {
@@ -65,7 +64,7 @@ DOWNLOAD_DELAY = 3
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-   "realestate_scraper.middlewares.RandomUserAgentMiddleware": 400,
+   "realestate_scraper.middlewares.RandomUserAgentMiddleware": 543,
 }
 
 # Enable or disable extensions
@@ -84,6 +83,7 @@ ITEM_PIPELINES = {
 MONGO_URI = 'mongodb://127.0.0.1:27017/'
 MONGO_DATABASE = 'portalinmobiliario'
 MONGO_COLLECTION = 'propiedades'
+MONGO_COLLECTION_LOG = 'log'
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
@@ -110,3 +110,9 @@ AUTOTHROTTLE_MAX_DELAY = 60
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
+
+# Logging setting
+LOG_FILE = 'log/scraper.log'
+LOG_LEVEL = 'DEBUG'
+#LOG_FORMAT = '%(asctime)s - %(message)s'
+LOG_DATEFORMAT = '%Y-%m-%d %H:%M:%S'
