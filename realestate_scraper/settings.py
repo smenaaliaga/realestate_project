@@ -33,7 +33,7 @@ USER_AGENTS = [
 ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 4
+# CONCURRENT_REQUESTS = 4
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
@@ -112,7 +112,28 @@ TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
 
 # Logging setting
+import logging
+from logging.handlers import RotatingFileHandler
+from scrapy.utils.log import configure_logging
+
+configure_logging(install_root_handler=False)
 LOG_FILE = 'log/scraper.log'
-LOG_LEVEL = 'DEBUG'
-#LOG_FORMAT = '%(asctime)s - %(message)s'
-LOG_DATEFORMAT = '%Y-%m-%d %H:%M:%S'
+LOG_LEVEL = 'INFO'
+# LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s'
+# LOG_DATEFORMAT = '%Y-%m-%d %H:%M:%S'
+
+log_format = '%(asctime)s %(levelname)s: %(message)s'
+date_format = '%Y-%m-%d %H:%M:%S'
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(LOG_LEVEL)
+formatter = logging.Formatter(log_format, date_format)
+console_handler.setFormatter(formatter)
+
+logging.getLogger('scrapy').addHandler(console_handler)
+logging.getLogger('scrapy').propagate = False
+
+file_handler = RotatingFileHandler('log/scraper.log', maxBytes=10*1024*1024, backupCount=5)
+file_handler.setLevel(LOG_LEVEL)
+file_handler.setFormatter(formatter)
+logging.getLogger('scrapy').addHandler(file_handler)

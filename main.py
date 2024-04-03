@@ -1,15 +1,13 @@
 import subprocess
+import json
 
 if __name__ == '__main__':
     # Variables
     tipo_operaciones = ['venta'] #, 'arriendo']
-    tipo_propiedades = ['departamento'] #, 'casa', 'parcela']
+    tipo_propiedades = ['departamento', 'casa']
     modalidades = ['propiedades-usadas', 'proyectos']
-    ubicaciones = {
-        'metropolitana': {
-            'providencia': ['plaza-italia'] #['barrio-italia', 'bellavista', 'campus-oriente', 'ines-de-suarez', 'las-lilas', 'los-leones', 'manuel-montt', 'metro-bilbao', 'metro-tobalaba-mall-costanera', 'pedro-de-valdivia', 'pedro-de-valdivia-norte', 'plaza-italia', 'salvador']
-        }
-    }
+    with open('resources/ubicaciones.json', 'r') as file:
+        ubicaciones = json.load(file)
 
     # Recorre  tipo de operaciones
     for tipo_operacion in tipo_operaciones:

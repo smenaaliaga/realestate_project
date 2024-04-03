@@ -2,9 +2,12 @@ import re
 import uuid
 import json
 import scrapy
+from scrapy import signals
+from scrapy.signalmanager import dispatcher
 from scrapy.utils.project import get_project_settings
 from pymongo import MongoClient
 from datetime import datetime
+import logging
 
 class PortailInmobiliarioSpider(scrapy.Spider):
     name = 'PortalInmobiliario'
@@ -13,6 +16,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
 
     def __init__(self, *args, **kwargs):
         super(PortailInmobiliarioSpider, self).__init__(*args, **kwargs)
+        dispatcher.connect(self.close, signal=signals.spider_closed)
 
         try:
             self.process_uuid = str(uuid.uuid4())
@@ -58,9 +62,14 @@ class PortailInmobiliarioSpider(scrapy.Spider):
             # Error
             self.error = None
             self.msg_error = None
+
+            logging.info(f'({self.process_uuid}) Inicia spyder')
+
         except Exception as e:
             self.error = e
             self.msg_error = 'Error al inicializar Spider'
+            logging.error(f'({self.process_uuid}) Error al inicializar Spider: {e}')
+            self.crawler.engine.close_spider(self, 'exception_found')
 
     def start_requests(self):
         try:
@@ -69,9 +78,13 @@ class PortailInmobiliarioSpider(scrapy.Spider):
         except Exception as e:
             self.error = e
             self.msg_error = f'Error al generar solicitud para {url}'
+            logging.error(f'({self.process_uuid}) Error al generar solicitud para {url}: {e}')
+            self.crawler.engine.close_spider(self, 'exception_found')
 
     def parse(self, response):
         try:
+            logging.info(f'({self.process_uuid}) Procesando paginación: {response.url}')
+
             # Obtiene todas las URLs de la paginación actual
             page_urls = response.css('.ui-search-result__content-wrapper.ui-search-link::attr(href)').getall()
             self.collected_urls.extend(response.urljoin(url) for url in page_urls)
@@ -85,13 +98,17 @@ class PortailInmobiliarioSpider(scrapy.Spider):
                 # Se han recolectado todas las URLs
                 self.collected_urls = self.preprocessed_urls(self.collected_urls)
                 self.n_propiedades = len(self.collected_urls)
+                logging.debug(self.collected_urls)
                 self.collected_urls_news = self.filter_urls(self.collected_urls)
                 self.n_novedades = len(self.collected_urls_news)
+                logging.info(f'({self.process_uuid}) Total propiedades a procesar: {self.n_novedades}')
                 for url in self.collected_urls_news:
                     yield scrapy.Request(url, callback=self.parse_url)
         except Exception as e:
             self.error = e if response.status != 403 else "Acceso denegado: HTTP 403"
             self.msg_error = f'Error al procesar paginación {response.url}'
+            logging.error(f'({self.process_uuid}) Error al procesar paginación {response.url}: {e}')
+            self.crawler.engine.close_spider(self, 'exception_found')
 
     def preprocessed_urls(self, urls):
         # Limpia URL solo con info. necesaria
@@ -139,6 +156,8 @@ class PortailInmobiliarioSpider(scrapy.Spider):
 
     def parse_url(self, response):
         try:
+            logging.info(f'({self.process_uuid}) Procesando propiedad: {response.url}')
+
             # Obtiene todas las caracteristicas de las propiedades
             titulo = response.css('h1.ui-pdp-title::text').get(default=None)
             simbolo_moneda = response.css('span.andes-money-amount__currency-symbol::text').get(default=None)
@@ -196,6 +215,8 @@ class PortailInmobiliarioSpider(scrapy.Spider):
         except Exception as e:
             self.error = e if response.status != 403 else "Acceso denegado: HTTP 403"
             self.msg_error = f'Error al procesar propiedad {response.url}'
+            logging.error(f'({self.process_uuid}) Error al procesar propiedad {response.url}: {e}')
+            self.crawler.engine.close_spider(self, 'exception_found')
 
     def close_process_log(self, result):
         fecha_fin = datetime.now()
@@ -221,3 +242,4 @@ class PortailInmobiliarioSpider(scrapy.Spider):
         result = 'exitoso' if reason == 'finished' and self.error is None else 'fallido'
         self.close_process_log(result)
         self.client.close()
+        logging.info(f'({self.process_uuid}) Finaliza spyder. Status {result}')

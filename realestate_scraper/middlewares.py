@@ -23,7 +23,6 @@ class RandomUserAgentMiddleware(object):
 
     def process_request(self, request, spider):
         request.headers.setdefault('User-Agent', self.user_agent)
-        logging.info(f"User-Agent set to: {self.user_agent} for {spider.name}")
 
 class RealestateScraperSpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
