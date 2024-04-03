@@ -1,5 +1,6 @@
 import subprocess
 import json
+import time
 
 if __name__ == '__main__':
     # Variables
@@ -27,3 +28,4 @@ if __name__ == '__main__':
                                             '-a', f'comuna={comuna}',
                                             '-a', f'barrio={barrio}'
                                             ])
+                            time.sleep(120)

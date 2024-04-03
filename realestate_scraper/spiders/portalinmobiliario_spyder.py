@@ -57,6 +57,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
             self.n_paginaciones = 1
             self.n_propiedades = None
             self.n_novedades = None
+            self.n_procesados = 0
             # urls to parse
             self.collected_urls = []
             # Error
@@ -83,7 +84,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
 
     def parse(self, response):
         try:
-            logging.info(f'({self.process_uuid}) Procesando paginación: {response.url}')
+            logging.info(f'({self.process_uuid}) Procesando paginación {self.n_paginaciones}: {response.url}')
 
             # Obtiene todas las URLs de la paginación actual
             page_urls = response.css('.ui-search-result__content-wrapper.ui-search-link::attr(href)').getall()
@@ -156,7 +157,8 @@ class PortailInmobiliarioSpider(scrapy.Spider):
 
     def parse_url(self, response):
         try:
-            logging.info(f'({self.process_uuid}) Procesando propiedad: {response.url}')
+            self.n_procesados = self.n_procesados + 1
+            logging.info(f'({self.process_uuid}) Procesando propiedad {self.n_procesados}: {response.url}')
 
             # Obtiene todas las caracteristicas de las propiedades
             titulo = response.css('h1.ui-pdp-title::text').get(default=None)

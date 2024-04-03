@@ -19,6 +19,7 @@ class RandomUserAgentMiddleware(object):
         user_agents = crawler.settings.getlist('USER_AGENTS')
         # Seleccionar un User-Agent aleatorio para este spider en particular
         user_agent = random.choice(user_agents)
+        logging.info(f"User-Agent: {user_agent}")
         return cls(user_agent)
 
     def process_request(self, request, spider):
