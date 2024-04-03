@@ -45,16 +45,14 @@ class PortailInmobiliarioSpider(scrapy.Spider):
                 'fecha_fin': None,
                 'duracion': None,
                 'resultado': None,
-                'n_paginaciones': None,
-                'n_propiedades': None,
-                'n_novedades': None,
+                'summary': None,
                 'error': None
             }
             self.collection_log.insert_one(record_log).inserted_id
             # Cantidad
             self.n_paginaciones = 1
-            self.n_propiedades = 0
-            self.n_novedades = 0
+            self.n_propiedades = None
+            self.n_novedades = None
             # urls to parse
             self.collected_urls = []
             # Error
@@ -93,7 +91,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
                     yield scrapy.Request(url, callback=self.parse_url)
         except Exception as e:
             self.error = e if response.status != 403 else "Acceso denegado: HTTP 403"
-            self.msg_error = f'Error al procesar {response.url}'
+            self.msg_error = f'Error al procesar paginación {response.url}'
 
     def preprocessed_urls(self, urls):
         # Limpia URL solo con info. necesaria
@@ -197,7 +195,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
             }
         except Exception as e:
             self.error = e if response.status != 403 else "Acceso denegado: HTTP 403"
-            self.msg_error = f'Error al procesar {response.url}'
+            self.msg_error = f'Error al procesar propiedad {response.url}'
 
     def close_process_log(self, result):
         fecha_fin = datetime.now()
@@ -210,9 +208,11 @@ class PortailInmobiliarioSpider(scrapy.Spider):
                 'fecha_fin': fecha_fin,
                 'duracion': duracion_str,
                 'resultado': result,
-                'n_paginaciones': self.n_paginaciones if self.error is None else None,
-                'n_propiedades': self.n_propiedades if self.error is None else None,
-                'n_novedades': self.n_novedades if self.error is None else None,
+                'summary': {
+                    'n_paginaciones': self.n_paginaciones,
+                    'n_propiedades': self.n_propiedades,
+                    'n_novedades': self.n_novedades 
+                } if self.error is None else None,
                 'error': {'e1': self.msg_error, 'e2': str(self.error)} if self.error is not None else None
             }}
         )

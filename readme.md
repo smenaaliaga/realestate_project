@@ -8,7 +8,7 @@
     scrapy crawl PortalInmobiliario
 
 ## Execute with crontab
-    0 6 * * * /realestate_scraper/main.py > /realestate_scraper/log/cron.log 2>&1
+    0 6 * * * /bin/bash /home/choribread/realestate_scraper/run.sh
 
 ## Use Data Base MongoDB
 
