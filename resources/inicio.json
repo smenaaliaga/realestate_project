@@ -1,20 +1,5 @@
 {
     "metropolitana": {
-        "providencia": {
-            "barrio-italia": 1,
-            "bellavista": 1,
-            "campus-oriente": 1,
-            "ines-de-suarez": 1,
-            "las-lilas": 1,
-            "los-leones": 1,
-            "manuel-montt": 1,
-            "metro-bilbao": 1,
-            "metro-tobalaba-mall-costanera": 1,
-            "pedro-de-valdivia": 1,
-            "pedro-de-valdivia-norte": 1,
-            "plaza-italia": 1,
-            "salvador": 1
-        },
         "nunoa": {
             "amapolas": 1,
             "diagonal-oriente": 2,

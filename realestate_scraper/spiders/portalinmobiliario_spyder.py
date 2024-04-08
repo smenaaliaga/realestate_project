@@ -29,6 +29,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
             self.r = kwargs.get('region')
             self.c = kwargs.get('comuna')
             self.b = kwargs.get('barrio')
+            self.tipo_url = kwargs.get('tipo_url')
             # Conexión MongoDB
             self.client = MongoClient(get_project_settings().get('MONGO_URI'))
             self.db = self.client[get_project_settings().get('MONGO_DATABASE')]
@@ -65,6 +66,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
             self.msg_error = None
 
             logging.info(f'({self.process_uuid}) Inicia spyder')
+            logging.info({'uuid': self.process_uuid, 'tipo_operacion': self.to, 'tipo_propiedad': self.tp, 'modalidad': self.m, 'region': self.r, 'comuna': self.c, 'barrio': self.b})
 
         except Exception as e:
             self.error = e
@@ -74,7 +76,12 @@ class PortailInmobiliarioSpider(scrapy.Spider):
 
     def start_requests(self):
         try:
-            url = f'https://www.portalinmobiliario.com/{self.to}/{self.tp}/{self.m}/{self.b}-{self.c}-santiago-{self.r}'
+            url = None
+            if self.r == 'metropolitana':
+                if self.tipo_url == "1":
+                    url = f'https://www.portalinmobiliario.com/{self.to}/{self.tp}/{self.m}/{self.b}-{self.c}-santiago-{self.r}'
+                if self.tipo_url == "2":
+                    url = f'https://www.portalinmobiliario.com/{self.to}/{self.tp}/{self.m}/rm-{self.r}/{self.c}/{self.b}'
             yield scrapy.Request(url=url, callback=self.parse)
         except Exception as e:
             self.error = e
@@ -92,16 +99,18 @@ class PortailInmobiliarioSpider(scrapy.Spider):
 
             # Recorre la siguiente paginación y repite el proceso
             next_page = response.css('li.andes-pagination__button--next a::attr(href)').get()
-            if next_page != '':
+            next_page = next_page if next_page != '' else None
+            if next_page is not None:
                 self.n_paginaciones = self.n_paginaciones + 1
                 yield response.follow(next_page, callback=self.parse)
             else:
                 # Se han recolectado todas las URLs
                 self.collected_urls = self.preprocessed_urls(self.collected_urls)
                 self.n_propiedades = len(self.collected_urls)
-                logging.debug(self.collected_urls)
+                print('total scraper: ', self.collected_urls)
                 self.collected_urls_news = self.filter_urls(self.collected_urls)
                 self.n_novedades = len(self.collected_urls_news)
+                print('total novedades: ', self.collected_urls_news)
                 logging.info(f'({self.process_uuid}) Total propiedades a procesar: {self.n_novedades}')
                 for url in self.collected_urls_news:
                     yield scrapy.Request(url, callback=self.parse_url)

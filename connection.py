@@ -2,7 +2,7 @@ from pymongo import MongoClient
 
 ### Conexion al servidor MongoDB
 
-client = MongoClient('mongodb://X.X.X.X:27017/')
+client = MongoClient('mongodb://192.168.1.88:27017/')
 db = client['portalinmobiliario']
 collection = db['propiedades']
 
@@ -36,3 +36,9 @@ criterios = {"comuna": "providencia", "caracteristicas.Principales.Dormitorios":
 registros = collection.find(criterios)
 for registro in registros:
     print(registro)
+
+
+query = {'tipo_operacion': 'venta', 'tipo_propiedad': 'departamento', 'modalidad': 'proyectos', 'region': 'metropolitana', 'comuna': 'providencia', 'barrio': 'pedro-de-valdivia-norte'}
+urls_db = collection.find(query, {'_id': 0, 'url': 1})
+urls_db = [doc['url'] for doc in urls_db]     
+print(urls_db)
