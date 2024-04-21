@@ -7,7 +7,7 @@ if __name__ == '__main__':
     tipo_operaciones = ['venta'] #, 'arriendo']
     tipo_propiedades = ['departamento', 'casa']
     modalidades = ['propiedades-usadas'] #, 'proyectos']
-    with open('resources/inicio.json', 'r') as file:
+    with open('resources/ubicaciones.json', 'r') as file:
         ubicaciones = json.load(file)
 
     # Recorre tipos de operaciones
@@ -20,7 +20,6 @@ if __name__ == '__main__':
                 for region, comunas in ubicaciones.items():
                     for comuna, barrios in comunas.items():
                         for barrio, tipo_url in barrios.items():
-                            print(barrio, tipo_url)
                             subprocess.run(['scrapy', 'crawl', 'PortalInmobiliario',
                                             '-a', f'tipo_operacion={tipo_operacion}',
                                             '-a', f'tipo_propiedad={tipo_propiedad}',

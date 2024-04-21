@@ -59,6 +59,8 @@ class PortailInmobiliarioSpider(scrapy.Spider):
             self.n_propiedades = None
             self.n_novedades = None
             self.n_procesados = 0
+            self.n_actualizados_vigente = 0
+            self.n_actualizados_no_vigente = 0
             # urls to parse
             self.collected_urls = []
             # Error
@@ -80,6 +82,8 @@ class PortailInmobiliarioSpider(scrapy.Spider):
             if self.r == 'metropolitana':
                 if self.tipo_url == "1":
                     url = f'https://www.portalinmobiliario.com/{self.to}/{self.tp}/{self.m}/{self.b}-{self.c}-santiago-{self.r}'
+                    if self.b == 'plaza-nunoa':
+                        url = f'https://www.portalinmobiliario.com/{self.to}/{self.tp}/{self.m}/{self.b}-santiago-{self.r}'
                 if self.tipo_url == "2":
                     url = f'https://www.portalinmobiliario.com/{self.to}/{self.tp}/{self.m}/rm-{self.r}/{self.c}/{self.b}'
             yield scrapy.Request(url=url, callback=self.parse)
@@ -103,17 +107,30 @@ class PortailInmobiliarioSpider(scrapy.Spider):
             if next_page is not None:
                 self.n_paginaciones = self.n_paginaciones + 1
                 yield response.follow(next_page, callback=self.parse)
+            # Se han recolectado todas las URLs
             else:
-                # Se han recolectado todas las URLs
+                # Limpia las URL solo con informacion util
                 self.collected_urls = self.preprocessed_urls(self.collected_urls)
                 self.n_propiedades = len(self.collected_urls)
-                print('total scraper: ', self.collected_urls)
+
+                # Escribe todas las URL scrapeadas en log alternativo
+                with open('log/urls.log', 'a') as archivo:
+                    for url in self.collected_urls:
+                        archivo.write(f"({self.process_uuid}) {url}\n")
+
+                # Actualiza la vigencia de las URL ya existentes
+                self.update_properties(self.collected_urls)
+                
+                # Filtra solo las URLs que representan novedades a agregar a la BD
                 self.collected_urls_news = self.filter_urls(self.collected_urls)
                 self.n_novedades = len(self.collected_urls_news)
-                print('total novedades: ', self.collected_urls_news)
+
                 logging.info(f'({self.process_uuid}) Total propiedades a procesar: {self.n_novedades}')
+
+                # Inicia procesamiento de novedades de URL
                 for url in self.collected_urls_news:
                     yield scrapy.Request(url, callback=self.parse_url)
+
         except Exception as e:
             self.error = e if response.status != 403 else "Acceso denegado: HTTP 403"
             self.msg_error = f'Error al procesar paginación {response.url}'
@@ -126,14 +143,88 @@ class PortailInmobiliarioSpider(scrapy.Spider):
         return urls_split
     
     def filter_urls(self, urls):
-        # Consulta MongoDB, obtiene todas las URLs dado el filtro
-        query = {'tipo_operacion': self.to, 'tipo_propiedad': self.tp, 'modalidad': 
-                 self.m, 'region': self.r, 'comuna': self.c, 'barrio': self.b}
-        urls_db = self.collection_propiedades.find(query, {'_id': 0, 'url': 1})
-        urls_db = [doc['url'] for doc in urls_db]
+        try: 
+            # Consulta MongoDB, obtiene todas las URLs dado el filtro
+            query = {'tipo_operacion': self.to, 'tipo_propiedad': self.tp, 'modalidad': 
+                    self.m, 'region': self.r, 'comuna': self.c, 'barrio': self.b}
+            urls_db = self.collection_propiedades.find(query, {'_id': 0, 'url': 1})
+            urls_db = [doc['url'] for doc in urls_db]
 
-        # Retorna solo las URLs que no están en la base de datos
-        return [url for url in urls if url not in urls_db]
+            # Retorna solo las URLs que no están en la base de datos
+            return [url for url in urls if url not in urls_db]
+        
+        except Exception as e:
+            self.error = e
+            self.msg_error = 'Error durante el filtro de URLS'
+            logging.error(f'({self.process_uuid}) Error durante el filtro de URLS: {e}')
+            self.crawler.engine.close_spider(self, 'exception_found')
+    
+    def update_properties(self, urls):
+        try:
+            # Obtener URLs en la lista con publicacion_vigente en 0
+            active_urls = self.collection_propiedades.find(
+                {
+                    'url': {'$in': urls},  # URLs que están en la lista proporcionada
+                    'publicacion_vigente': 0, 
+                    'tipo_operacion': self.to, 'tipo_propiedad': self.tp, 'modalidad': self.m, 'region': self.r, 'comuna': self.c, 'barrio': self.b
+                },
+                {'url': 1, '_id': 0}
+            )
+            active_urls = [doc['url'] for doc in active_urls]
+            # Obtener URLs no en la lista con publicacion_vigente en 1
+            inactive_urls = self.collection_propiedades.find(
+                {
+                    'url': {'$nin': urls},  # URLs que no están en la lista proporcionada
+                    'publicacion_vigente': 1, 
+                    'tipo_operacion': self.to, 'tipo_propiedad': self.tp, 'modalidad': self.m, 'region': self.r, 'comuna': self.c, 'barrio': self.b
+                },
+                {'url': 1, '_id': 0} 
+            )
+            inactive_urls = [doc['url'] for doc in inactive_urls]  # Crear lista de URLs
+            # Actualizar las URLs que están en la lista y tienen publicacion_vigente en 0
+            self.collection_propiedades.update_many(
+                {
+                    'url': {'$in': urls},  # URLs que están en la lista proporcionada
+                    'publicacion_vigente': 0, 
+                    'tipo_operacion': self.to, 'tipo_propiedad': self.tp, 'modalidad': self.m, 'region': self.r, 'comuna': self.c, 'barrio': self.b
+                },
+                {
+                    '$set': {
+                        'publicacion_vigente': 1,  # Cambiar a 1
+                        'fecha_actualizacion': self.dt  # Establecer fecha actual
+                    }
+                }
+            )
+            # Actualizar las URLs que no están en la lista y tienen publicacion_vigente en 1
+            self.collection_propiedades.update_many(
+                {
+                    'url': {'$nin': urls},  # URLs que no están en la lista proporcionada
+                    'publicacion_vigente': 1, 
+                    'tipo_operacion': self.to, 'tipo_propiedad': self.tp, 'modalidad': self.m, 'region': self.r, 'comuna': self.c, 'barrio': self.b
+                },
+                {
+                    '$set': {
+                        'publicacion_vigente': 0,  # Cambiar a 0
+                        'fecha_actualizacion': self.dt  # Establecer fecha actual
+                    }
+                }
+            )
+            
+            self.n_actualizados_vigente = len(active_urls)
+            logging.info(f'({self.process_uuid}) Total propiedades que han pasado a estar vigente: {self.n_actualizados_vigente}')
+            for active_url in active_urls:
+                logging.info(f'({self.process_uuid}) Propiedad pasa a vigente: {active_url}')
+
+            self.n_actualizados_no_vigente = len(inactive_urls)
+            logging.info(f'({self.process_uuid}) Total propiedades que han dejado de estar vigente: {self.n_actualizados_no_vigente}')
+            for inactive_url in inactive_urls:
+                logging.info(f'({self.process_uuid}) Propiedad pasa a no estar vigente: {inactive_url}')
+                
+        except Exception as e:
+            self.error = e
+            self.msg_error = 'Error durante la actualización'
+            logging.error(f'({self.process_uuid}) Error durante la actualización: {e}')
+            self.crawler.engine.close_spider(self, 'exception_found')
     
     def get_info_zonas(self, content):
         # Obtiene el string del json de la data de informacion de la zona
@@ -188,7 +279,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
                     campo = fila.css('.andes-table__header .andes-table__header__container::text').get(default='').strip()
                     valor = fila.css('.andes-table__column--value::text').get(default='').strip()
                     campos_valores[campo] = valor
-                if titulo_caracteristica:  # Asegurarse de que el título de la característica no esté vacío
+                if titulo_caracteristica: 
                     caracteristicas_dict[titulo_caracteristica] = campos_valores
             descripcion_fragmentos = response.css('p.ui-pdp-description__content ::text').getall()
             descripcion_completa = ' '.join(descripcion_fragmentos).strip()
@@ -221,7 +312,9 @@ class PortailInmobiliarioSpider(scrapy.Spider):
                 'descripcion': descripcion_completa,
                 'info_zona': info_zona,
                 'ref_precio': ref_precio,
-                'corredora': corredora
+                'corredora': corredora,
+                'publicacion_vigente': 1,
+                'fecha_actualizacion': None
             }
         except Exception as e:
             self.error = e if response.status != 403 else "Acceso denegado: HTTP 403"
@@ -243,7 +336,9 @@ class PortailInmobiliarioSpider(scrapy.Spider):
                 'summary': {
                     'n_paginaciones': self.n_paginaciones,
                     'n_propiedades': self.n_propiedades,
-                    'n_novedades': self.n_novedades 
+                    'n_novedades': self.n_novedades,
+                    'n_actualizados_vigente': self.n_actualizados_vigente,
+                    'n_actualizados_no_vigente': self.n_actualizados_no_vigente
                 } if self.error is None else None,
                 'error': {'e1': self.msg_error, 'e2': str(self.error)} if self.error is not None else None
             }}
