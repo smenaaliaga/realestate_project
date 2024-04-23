@@ -50,7 +50,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
                 'fecha_fin': None,
                 'duracion': None,
                 'resultado': None,
-                'summary': None,
+                'resumen': None,
                 'error': None
             }
             self.collection_log.insert_one(record_log).inserted_id
@@ -333,7 +333,7 @@ class PortailInmobiliarioSpider(scrapy.Spider):
                 'fecha_fin': fecha_fin,
                 'duracion': duracion_str,
                 'resultado': result,
-                'summary': {
+                'resumen': {
                     'n_paginaciones': self.n_paginaciones,
                     'n_propiedades': self.n_propiedades,
                     'n_novedades': self.n_novedades,

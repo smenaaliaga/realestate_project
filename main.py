@@ -1,6 +1,7 @@
 import subprocess
 import json
 import time
+from smtp.status import send_status_email
 
 if __name__ == '__main__':
     # Variables
@@ -30,3 +31,5 @@ if __name__ == '__main__':
                                             '-a', f'tipo_url={tipo_url}'
                                             ])
                             time.sleep(15)
+    
+    send_status_email()
