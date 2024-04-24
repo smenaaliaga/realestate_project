@@ -1,8 +1,8 @@
-# Realestate Scraper
+# Realestate Project
 
 ## Activate Virtual Environment
 
-    source ../environments/realestate_scraper/bin/activate
+    source ../environments/realestate_project/bin/activate
 
 ## Execute scraper
     scrapy crawl PortalInmobiliario -a tipo_operacion=venta -a tipo_propiedad=departamento -a modalidad=propiedades-usadas -a region=metropolitana -a comuna=nunoa -a barrio=plaza-nunoa -a tipo_url=1
@@ -10,7 +10,7 @@
     bash run.sh
 
 ## Execute with crontab
-    0 6 * * * /bin/bash /home/choribread/realestate_scraper/run.sh
+    0 6 * * * /bin/bash /home/seldon/realestate_project/run.sh
 
 ## Use Data Base MongoDB
 
