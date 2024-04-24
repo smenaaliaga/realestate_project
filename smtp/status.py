@@ -4,6 +4,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from scrapy.utils.project import get_project_settings
 from pymongo import MongoClient
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def send_status_email():
     # Configura los parámetros del correo electrónico
@@ -32,49 +35,62 @@ def send_status_email():
     n_exitosos = collection_log.count_documents({"tag.email": 0, "resultado": "exitoso"})
     n_fallidos = collection_log.count_documents({"tag.email": 0, "resultado": "fallido"})
     
-    uuid_fallidos = collection_log.find({'resultado': 'fallido', 'tag.email': 0}, {'uuid': 1, '_id': 0})
-    uuid_fallidos = [doc['uuid'] for doc in uuid_fallidos]
+    if n_exitosos + n_fallidos > 0:
     
-    pipeline_fechas = [
-        {"$match": {"tag.email": 0}},
-        {"$group": {"_id": None,"fecha_inicio_min": {"$min": "$fecha_inicio"},"fecha_fin_max": {"$max": "$fecha_fin"}}}
-    ]
-    result_fechas = list(collection_log.aggregate(pipeline_fechas))
-    
-    if result_fechas:
-        # Obtener las fechas del resultado
-        fecha_inicio_min = result_fechas[0]['fecha_inicio_min']
-        fecha_fin_max = result_fechas[0]['fecha_fin_max']
+        uuid_fallidos = collection_log.find({'resultado': 'fallido', 'tag.email': 0}, {'uuid': 1, '_id': 0})
+        uuid_fallidos = [doc['uuid'] for doc in uuid_fallidos]
         
-        # Formatear fechas
-        fecha_inicio_str = fecha_inicio_min.strftime("%d-%m-%Y %H:%M:%S")
-        fecha_fin_str = fecha_fin_max.strftime("%d-%m-%Y %H:%M:%S")
+        pipeline_fechas = [
+            {"$match": {"tag.email": 0}},
+            {"$group": {"_id": None,"fecha_inicio_min": {"$min": "$fecha_inicio"},"fecha_fin_max": {"$max": "$fecha_fin"}}}
+        ]
+        result_fechas = list(collection_log.aggregate(pipeline_fechas))
         
-        # Calcular el tiempo total del proceso
-        tiempo_total = fecha_fin_max - fecha_inicio_min
-        tiempo_total_str = str(tiempo_total).split('.')[0]
+        if result_fechas:
+            # Obtener las fechas del resultado
+            fecha_inicio_min = result_fechas[0]['fecha_inicio_min']
+            fecha_fin_max = result_fechas[0]['fecha_fin_max']
+            
+            # Formatear fechas
+            fecha_inicio_str = fecha_inicio_min.strftime("%d-%m-%Y %H:%M:%S")
+            fecha_fin_str = fecha_fin_max.strftime("%d-%m-%Y %H:%M:%S")
+            
+            # Calcular el tiempo total del proceso
+            tiempo_total = fecha_fin_max - fecha_inicio_min
+            tiempo_total_str = str(tiempo_total).split('.')[0]
 
+        # Cuerpo
+        html = f"""
+        <html>
+        <body style="color: black; font-family: Arial, sans-serif;">
+        <h2>Status Realestate Project:</h2>
+        <p><strong>Inicio del proceso:</strong> {fecha_inicio_str}</p>
+        <p><strong>Termino del proceso:</strong> {fecha_fin_str}</p>
+        <p><strong>Tiempo total proceso:</strong> {tiempo_total_str}</p>
+        <p><strong>Total de scrapeos exitosos:</strong> {n_exitosos}</p>
+        <p><strong>Total de scrapeos fallidos:</strong> {n_fallidos}</p>
+        {f'<p><strong>UUIDs fallidos:</strong><br>{"".join(f"<span>{uuid}</span><br>" for uuid in uuid_fallidos)}</p>' if n_fallidos > 0 else ''}
+        <p>Saludos,<br>Quicksort System</p>
+        </body>
+        </html>
+        """
+    else:
+        # Cuerpo
+        html = f"""
+        <html>
+        <body style="color: black; font-family: Arial, sans-serif;">
+        <h2>Status Realestate Project:</h2>
+        <p><strong>No hay novedades</strong></p>
+        <p>Saludos,<br>Quicksort System</p>
+        </body>
+        </html>
+        """
+    
     # Crea el objeto mensaje
     message = MIMEMultipart()
     message["From"] = sender_email
     message["To"] = ", ".join(receiver_emails)
     message["Subject"] = "Proceso terminado exitosamente" if n_fallidos == 0 else "Proceso terminado con fallas"
-    
-    # Cuerpo
-    html = f"""
-    <html>
-    <body style="color: black; font-family: Arial, sans-serif;">
-    <h2>Status del proceso: Realestate Project</h2>
-    <p><strong>Inicio del proceso:</strong> {fecha_inicio_str}</p>
-    <p><strong>Termino del proceso:</strong> {fecha_fin_str}</p>
-    <p><strong>Tiempo total proceso:</strong> {tiempo_total_str}</p>
-    <p><strong>Total de scrapeos exitosos:</strong> {n_exitosos}</p>
-    <p><strong>Total de scrapeos fallidos:</strong> {n_fallidos}</p>
-    {f'<p><strong>UUIDs fallidos:</strong><br>{"".join(f"<span>{uuid}</span><br>" for uuid in uuid_fallidos)}</p>' if n_fallidos > 0 else ''}
-    <p>Saludos,<br><strong>Terminus</strong></p>
-    </body>
-    </html>
-    """
 
     # Añade el cuerpo al correo
     message.attach(MIMEText(html, "html"))
