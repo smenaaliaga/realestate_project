@@ -2,7 +2,7 @@ from pymongo import MongoClient
 
 ### Conexion al servidor MongoDB
 
-client = MongoClient('mongodb://192.168.1.88:27017/')
+client = MongoClient('mongodb://XXX.XXX.X.XX:27017/')
 db = client['portalinmobiliario']
 collection = db['propiedades']
 
